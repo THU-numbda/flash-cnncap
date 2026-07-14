@@ -1,6 +1,6 @@
 # Third-party notices
 
-Flash-CNNCap is licensed under Apache-2.0. The repository also contains generated or adapted data derived from the following open technology resources.
+The repository contains generated or adapted data derived from the following open technology resources.
 
 ## Nangate45
 

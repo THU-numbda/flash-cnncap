@@ -41,6 +41,6 @@ python scripts/best_model_eval.py run --model D4_D_k5 --gpu-ids 0,1,2,3,4,5,6,7 
 
 See [`docs/reproduction.md`](docs/reproduction.md) for the full protocol and [`full-pipeline/README.md`](full-pipeline/README.md) for deployment. The optional [HDF5 cache](docs/hdf5-cache.md) stores binary occupancy only and does not change the paper input encoding.
 
-## Citation and license
+## Citation
 
-Citation metadata is provided in [`CITATION.cff`](CITATION.cff). Flash-CNNCap is released under Apache-2.0; see [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) for technology-data attribution.
+Citation metadata is provided in [`CITATION.cff`](CITATION.cff). See [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md) for technology-data attribution.

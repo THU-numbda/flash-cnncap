@@ -4,7 +4,6 @@ title: "Flash-CNNCap: Capacitance Extraction via Image Mapping"
 type: software
 version: 1.0.0
 date-released: 2026-07-14
-license: Apache-2.0
 repository-code: "https://github.com/THU-numbda/flash-cnncap"
 authors:
   - family-names: Rodriguez
