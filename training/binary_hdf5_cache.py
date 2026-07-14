@@ -13,7 +13,15 @@ from types import SimpleNamespace
 from typing import Any, Mapping, Sequence
 
 import numpy as np
-from torch.utils.data import Dataset
+
+try:
+    from torch.utils.data import Dataset
+except ModuleNotFoundError as exc:
+    if exc.name != "torch":
+        raise
+
+    class Dataset:  # type: ignore[no-redef]
+        """Lightweight fallback for cache inspection without a PyTorch install."""
 
 
 BINARY_CACHE_FORMAT_VERSION = 1
