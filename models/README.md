@@ -6,7 +6,7 @@ Download all models:
 
 ```bash
 gh release download v1.0.0 \
-  --repo HectorRguez/flash-cnncap \
+  --repo THU-numbda/flash-cnncap \
   --pattern 'flash-cnncap-d4-d-k5-*.pth' \
   --dir models
 ```
