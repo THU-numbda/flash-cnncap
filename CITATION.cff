@@ -1,0 +1,30 @@
+cff-version: 1.2.0
+message: "If you use Flash-CNNCap, please cite the ICCAD 2026 paper and CapBench."
+title: "Flash-CNNCap: Capacitance Extraction via Image Mapping"
+type: software
+version: 1.0.0
+date-released: 2026-07-14
+license: Apache-2.0
+repository-code: "https://github.com/HectorRguez/flash-cnncap"
+authors:
+  - family-names: Rodriguez
+    given-names: Hector R.
+    orcid: "https://orcid.org/0009-0005-3794-3816"
+  - family-names: Huang
+    given-names: Jiechen
+    orcid: "https://orcid.org/0000-0002-9748-1829"
+  - family-names: Yu
+    given-names: Wenjian
+    orcid: "https://orcid.org/0000-0003-4897-7251"
+preferred-citation:
+  type: conference-paper
+  title: "Flash-CNNCap: Capacitance Extraction via Image Mapping"
+  authors:
+    - family-names: Rodriguez
+      given-names: Hector R.
+    - family-names: Huang
+      given-names: Jiechen
+    - family-names: Yu
+      given-names: Wenjian
+  collection-title: "2026 IEEE/ACM International Conference on Computer-Aided Design (ICCAD)"
+  year: 2026
