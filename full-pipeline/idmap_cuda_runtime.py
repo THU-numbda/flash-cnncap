@@ -13,7 +13,7 @@ from native_extension_utils import ensure_torch_cuda_arch_list
 REPO_ROOT = Path(__file__).resolve().parents[1]
 NATIVE_SOURCE_DIR = Path(__file__).resolve().parent / "native"
 DEFAULT_TORCH_EXTENSION_DIR = REPO_ROOT / ".cache" / "torch_extensions"
-DEFAULT_IDMAP_EXPAND_EXTENSION_NAME = "cnncap_flash_idmap_expand_cuda_v1"
+DEFAULT_IDMAP_EXPAND_EXTENSION_NAME = "cnncap_flash_idmap_expand_cuda_v2"
 DEFAULT_TARGET_SIZE = 224
 INT16_MAX = np.iinfo(np.int16).max
 
