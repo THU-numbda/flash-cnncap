@@ -21,7 +21,7 @@ python full-pipeline/compile_models.py \
   --env-checkpoint models/flash-cnncap-d4-d-k5-nangate45-large-coupling.pth
 ```
 
-This writes FP16 TensorRT engines plus `compiled_models.json`, which records the active layer ordering and model contract.
+This writes the TensorRT engines plus `compiled_models.json`, which records the active layer ordering, precisions, and model contract. The total engine is FP16; the coupling (env) engine defaults to BF16 with batch 64, because the released coupling model's deepest U-Net levels exceed the FP16 range and an FP16 build returns NaN couplings. Use `--total-precision` / `--env-precision` (`fp16`, `bf16`, `fp32`) to override.
 
 ## Full-layout inference
 

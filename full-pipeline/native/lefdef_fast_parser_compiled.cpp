@@ -6,6 +6,7 @@
 #include <cmath>
 #include <cctype>
 #include <cstdint>
+#include <filesystem>
 #include <limits>
 #include <map>
 #include <memory>
@@ -892,9 +893,32 @@ std::vector<PreparedCompactResult> prepare_def_raster_compiled_tiles(
 ) {
     const auto parse_start = std::chrono::steady_clock::now();
     const CompiledTechSpec& tech_spec = compiled_tech_spec_for_key(tech_key);
-    const defgeom::Design design = defgeom::parse_def_file(def_path);
-    const ExpandedDesign expanded = expand_design(design, tech_spec, layer_widths_um, include_supply_nets, def_path);
-    const RectIndex index(expanded, 5.0);
+    // Full-layout runs stream tiles in chunks over the same DEF; keep the last expanded design
+    // (keyed by file identity and options) so each chunk does not re-parse the whole layout.
+    struct CachedDesign {
+        std::string key;
+        std::unique_ptr<ExpandedDesign> expanded;
+        std::unique_ptr<RectIndex> index;
+    };
+    static CachedDesign cache;
+    std::string key = def_path + "|" + tech_spec.tech_key + "|" + (include_supply_nets ? "1" : "0");
+    {
+        std::error_code ec;
+        const auto size = std::filesystem::file_size(def_path, ec);
+        const auto mtime = std::filesystem::last_write_time(def_path, ec).time_since_epoch().count();
+        key += "|" + std::to_string(size) + "|" + std::to_string(static_cast<long long>(mtime));
+        for (auto item : layer_widths_um) {
+            key += "|" + py::cast<std::string>(item.first) + "=" + std::to_string(py::cast<double>(item.second));
+        }
+    }
+    if (cache.key != key || !cache.expanded) {
+        const defgeom::Design design = defgeom::parse_def_file(def_path);
+        cache.expanded = std::make_unique<ExpandedDesign>(expand_design(design, tech_spec, layer_widths_um, include_supply_nets, def_path));
+        cache.index = std::make_unique<RectIndex>(*cache.expanded, 5.0);
+        cache.key = key;
+    }
+    const ExpandedDesign& expanded = *cache.expanded;
+    const RectIndex& index = *cache.index;
     const double parse_ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - parse_start).count();
 
     std::vector<PreparedCompactResult> out;

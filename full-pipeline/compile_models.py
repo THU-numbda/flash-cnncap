@@ -20,6 +20,7 @@ from model_runtime import (  # pylint: disable=wrong-import-position
     DEFAULT_TRT_BUILDER_OPT_LEVEL,
     DEFAULT_TRT_MAX_NUM_TACTICS,
     ModelSpec,
+    TRT_PRECISIONS,
     compile_model_to_tensorrt_engine,
     infer_checkpoint_input_channels,
     resolve_device,
@@ -32,6 +33,8 @@ from window_runtime import build_runtime_config  # pylint: disable=wrong-import-
 
 
 DEFAULT_PREFERRED_BATCH_SIZE = 24
+# Coupling (env) queries dominate full-layout runtime; larger batches keep the GPU busy.
+DEFAULT_ENV_BATCH_SIZE = 64
 
 
 def _print_progress(message: str) -> None:
@@ -84,9 +87,14 @@ def _parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument("--total-max-batch-size", type=int, default=DEFAULT_PREFERRED_BATCH_SIZE)
-    parser.add_argument("--env-max-batch-size", type=int, default=DEFAULT_PREFERRED_BATCH_SIZE)
+    parser.add_argument("--env-max-batch-size", type=int, default=DEFAULT_ENV_BATCH_SIZE)
     parser.add_argument("--total-opt-batch-size", type=int, default=DEFAULT_PREFERRED_BATCH_SIZE)
-    parser.add_argument("--env-opt-batch-size", type=int, default=DEFAULT_PREFERRED_BATCH_SIZE)
+    parser.add_argument("--env-opt-batch-size", type=int, default=DEFAULT_ENV_BATCH_SIZE)
+    parser.add_argument("--total-precision", choices=TRT_PRECISIONS, default="fp16",
+                        help="TensorRT precision for the total engine.")
+    parser.add_argument("--env-precision", choices=TRT_PRECISIONS, default="bf16",
+                        help="TensorRT precision for the env (coupling) engine. The released coupling model "
+                             "overflows FP16 (NaN couplings); bf16 keeps the FP32 range.")
     parser.add_argument("--total-output-name", type=str, default="total_qmap.engine")
     parser.add_argument("--env-output-name", type=str, default="env_qmap.engine")
     return parser.parse_args()
@@ -279,6 +287,7 @@ def main() -> int:
         target_size=int(args.target_size),
         opt_batch_size=int(args.total_opt_batch_size),
         max_batch_size=int(args.total_max_batch_size),
+        precision=str(args.total_precision),
     )
     _print_progress(
         f"Built total engine: artifact={total_output} elapsed_seconds={time.perf_counter() - total_started_at:.3f}"
@@ -297,6 +306,7 @@ def main() -> int:
         target_size=int(args.target_size),
         opt_batch_size=int(args.env_opt_batch_size),
         max_batch_size=int(args.env_max_batch_size),
+        precision=str(args.env_precision),
     )
     _print_progress(
         f"Built env engine: artifact={env_output} elapsed_seconds={time.perf_counter() - env_started_at:.3f}"
@@ -307,7 +317,7 @@ def main() -> int:
         "ok": True,
         "artifact_format": "tensorrt_engine",
         "device": str(device),
-        "precision": "fp16",
+        "precision": args.total_precision if args.total_precision == args.env_precision else "mixed",
         "num_input_channels": int(num_input_channels),
         "active_layers": list(active_layers),
         "target_size": int(args.target_size),
@@ -322,6 +332,7 @@ def main() -> int:
                 "monai_config": str(total_monai_config),
                 "opt_batch_size": int(args.total_opt_batch_size),
                 "max_batch_size": int(args.total_max_batch_size),
+                "precision": str(args.total_precision),
                 "checkpoint_metadata": total_metadata,
             },
             "env": {
@@ -331,6 +342,7 @@ def main() -> int:
                 "monai_config": str(env_monai_config),
                 "opt_batch_size": int(args.env_opt_batch_size),
                 "max_batch_size": int(args.env_max_batch_size),
+                "precision": str(args.env_precision),
                 "checkpoint_metadata": env_metadata,
             },
         },
