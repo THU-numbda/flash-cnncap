@@ -12,6 +12,13 @@ The native DEF rasterizer now reproduces the layout that the training windows an
 
 The rasterized geometry matches GDS-derived CAP3D exactly on the Nangate45 gcd die and a Sky130HD ibex clip. On gcd, the released models' full-chip error against RWCap drops from 9.6% to 3.7% MARE for totals and from 16.9% to 10.6% for couplings >= 1 aF (FP32 coupling engine; the released FP16 coupling engine overflows). End-to-end numbers reported in the paper were produced with the v1.0.0 rasterizer; use the `v1.0.0` tag to reproduce them.
 
+## Faster, NaN-free full-layout runs
+
+- The parsed layout is cached across tile stream chunks, and runs stream 64 tiles per native pass by default instead of staging every tile at once (which ran out of GPU memory on large dies).
+- `compile_models.py` takes `--total-precision` / `--env-precision` (`fp16`, `bf16`, `fp32`). The released coupling model exceeds the FP16 range in its deepest U-Net levels, so FP16 coupling engines returned NaN for every coupling; the coupling engine now defaults to BF16 with batch 64.
+
+On a 244 um Nangate45 die (13.5k nets, 961 tiles) a default run takes 25 s end to end, versus 336 s for v1.0.0 with 64-tile streaming (v1.0.0 defaults run out of memory there).
+
 # Flash-CNNCap v1.0.0
 
 Initial artifact release for the accepted ICCAD 2026 paper, “Flash-CNNCap: Capacitance Extraction via Image Mapping.”
