@@ -317,10 +317,13 @@ def _bounds_to_pixel_slice(
     keep_y0 = min(max(keep_y0, y_min), y_max)
     keep_y1 = min(max(keep_y1, y_min), y_max)
 
-    px_min = max(0, min(int(target_size), int(np.floor((keep_x0 - x_min) / float(pixel_resolution)))))
-    px_max = max(0, min(int(target_size), int(np.ceil((keep_x1 - x_min) / float(pixel_resolution)))))
-    py_min = max(0, min(int(target_size), int(np.floor((keep_y0 - y_min) / float(pixel_resolution)))))
-    py_max = max(0, min(int(target_size), int(np.ceil((keep_y1 - y_min) / float(pixel_resolution)))))
+    # Bounds on a pixel edge (up to floating-point noise) must not claim the neighbouring pixel,
+    # otherwise adjacent tiles both own it.
+    tie = 1e-7
+    px_min = max(0, min(int(target_size), int(np.floor((keep_x0 - x_min) / float(pixel_resolution) + tie))))
+    px_max = max(0, min(int(target_size), int(np.ceil((keep_x1 - x_min) / float(pixel_resolution) - tie))))
+    py_min = max(0, min(int(target_size), int(np.floor((keep_y0 - y_min) / float(pixel_resolution) + tie))))
+    py_max = max(0, min(int(target_size), int(np.ceil((keep_y1 - y_min) / float(pixel_resolution) - tie))))
     return px_min, px_max, py_min, py_max
 
 

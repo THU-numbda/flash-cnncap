@@ -122,6 +122,17 @@ def _build_axis_tiles(
     return tuple(tiles)
 
 
+def snap_tile_context_um(tile_size_um: float, tile_context_um: float, target_size: int) -> float:
+    """Context rounded to whole model pixels.
+
+    Keeps the patch stride an integer number of pixels, so adjacent tiles share one pixel grid and
+    every owned-patch boundary lies on a pixel edge. With a fractional stride (8 um = 179.2 px at
+    10 um / 224 px) the pixel straddling each patch boundary is owned by both tiles and counted twice.
+    """
+    context_px = int(round(float(tile_context_um) * float(target_size) / float(tile_size_um)))
+    return context_px * float(tile_size_um) / float(target_size)
+
+
 def build_tiled_window_jobs(
     design_id: str,
     *,
@@ -136,7 +147,7 @@ def build_tiled_window_jobs(
         raise ValueError(f"target_size must be positive, got {target_size}")
 
     tile_size_um = float(tile_size_um)
-    tile_context_um = float(tile_context_um)
+    tile_context_um = snap_tile_context_um(tile_size_um, tile_context_um, target_size)
     patch_size_um = tile_size_um - (2.0 * tile_context_um)
     if patch_size_um <= 0.0:
         raise ValueError(
@@ -232,16 +243,17 @@ def build_tiling_summary(
     row_indices = {int(job.row_index) for job in tile_jobs}
     col_indices = {int(job.col_index) for job in tile_jobs}
     die_x0, die_y0, die_x1, die_y1 = (float(value) for value in die_bounds_um)
+    snapped_context_um = snap_tile_context_um(tile_size_um, tile_context_um, target_size)
     return TilingSummary(
         design_id=str(design_id),
         mode="patch-margin-model-window-tiling",
         die_width_um=float(die_x1 - die_x0),
         die_height_um=float(die_y1 - die_y0),
         solve_target_size=int(target_size),
-        tile_width_um=float(tile_size_um - (2.0 * tile_context_um)),
-        tile_height_um=float(tile_size_um - (2.0 * tile_context_um)),
-        tile_context_um=float(tile_context_um),
-        stride_um=float(tile_size_um - (2.0 * tile_context_um)),
+        tile_width_um=float(tile_size_um - (2.0 * snapped_context_um)),
+        tile_height_um=float(tile_size_um - (2.0 * snapped_context_um)),
+        tile_context_um=float(snapped_context_um),
+        stride_um=float(tile_size_um - (2.0 * snapped_context_um)),
         tile_count_x=len(col_indices),
         tile_count_y=len(row_indices),
         tile_count=len(tile_jobs),
