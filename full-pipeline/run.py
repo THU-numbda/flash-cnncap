@@ -43,12 +43,11 @@ from spef_runtime import (  # pylint: disable=wrong-import-position
     IndexedSpefAccumulator,
 )
 from tile_utils import (  # pylint: disable=wrong-import-position
-    DEFAULT_TILE_CONTEXT_UM,
-    DEFAULT_TILE_SIZE_UM,
     TilingSummary,
     TileJob,
     build_tiled_window_jobs,
     build_tiling_summary,
+    tile_geometry_for_tech,
 )
 from window_runtime import (  # pylint: disable=wrong-import-position
     build_runtime_config,
@@ -213,20 +212,21 @@ def _build_window_job(def_path: Path, config: PipelineConfig) -> WindowJob:
 
 def _plan_tiled_design(def_path: Path, config: PipelineConfig) -> tuple[TilingSummary, Tuple[TileJob, ...]]:
     die_bounds_um = _read_def_diearea_um(def_path)
+    tile_size_um, tile_context_um = tile_geometry_for_tech(config.tech_path.stem)
     tile_jobs = build_tiled_window_jobs(
         def_path.stem,
         die_bounds_um=die_bounds_um,
         target_size=int(config.target_size),
-        tile_size_um=float(DEFAULT_TILE_SIZE_UM),
-        tile_context_um=float(DEFAULT_TILE_CONTEXT_UM),
+        tile_size_um=float(tile_size_um),
+        tile_context_um=float(tile_context_um),
     )
     summary = build_tiling_summary(
         def_path.stem,
         die_bounds_um=die_bounds_um,
         target_size=int(config.target_size),
         tile_jobs=tile_jobs,
-        tile_size_um=float(DEFAULT_TILE_SIZE_UM),
-        tile_context_um=float(DEFAULT_TILE_CONTEXT_UM),
+        tile_size_um=float(tile_size_um),
+        tile_context_um=float(tile_context_um),
     )
     return summary, tile_jobs
 
