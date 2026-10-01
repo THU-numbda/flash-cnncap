@@ -6,6 +6,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import numpy as np
+import pytest
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -28,19 +29,20 @@ def test_patch_tiling_uses_owned_patch_margin_and_10um_model_window() -> None:
         tile_size_um=10.0,
         tile_context_um=1.0,
     )
+    res = 10.0 / 224.0
+    context = 22 * res  # 1 um snapped to whole pixels
+    patch = 10.0 - 2.0 * context  # 180 px
 
     assert len(jobs) == 2
-    assert jobs[0].ownership_bounds == (0.0, 0.0, 8.0, 8.0)
-    assert jobs[0].patch_bounds == (0.0, 0.0, 8.0, 8.0)
-    assert jobs[0].margin_bounds == (-1.0, -1.0, 9.0, 9.0)
-    assert jobs[0].solve_bounds == (-1.0, -1.0, 9.0, 9.0)
+    assert jobs[0].ownership_bounds == pytest.approx((0.0, 0.0, patch, 8.0))
+    assert jobs[0].patch_bounds == jobs[0].ownership_bounds
+    assert jobs[0].margin_bounds == pytest.approx((-context, -context, patch + context, patch + context))
+    assert jobs[0].solve_bounds == jobs[0].margin_bounds
     assert jobs[0].raster_bounds == jobs[0].solve_bounds
-    assert jobs[0].pixel_resolution_um == (10.0 / 224.0)
+    assert jobs[0].pixel_resolution_um == res
 
-    assert jobs[1].ownership_bounds == (8.0, 0.0, 16.0, 8.0)
-    assert jobs[1].patch_bounds == (8.0, 0.0, 16.0, 8.0)
-    assert jobs[1].margin_bounds == (7.0, -1.0, 17.0, 9.0)
-    assert jobs[1].solve_bounds == (7.0, -1.0, 17.0, 9.0)
+    assert jobs[1].ownership_bounds == pytest.approx((patch, 0.0, 16.0, 8.0))
+    assert jobs[1].margin_bounds == pytest.approx((patch - context, -context, 2 * patch + context, patch + context))
 
 
 def test_edge_patch_keeps_full_10um_model_window() -> None:
@@ -54,10 +56,42 @@ def test_edge_patch_keeps_full_10um_model_window() -> None:
 
     assert len(jobs) == 25
     last = jobs[-1]
-    assert last.ownership_bounds == (32.0, 32.0, 36.24, 36.24)
-    assert last.raster_bounds == (31.0, 31.0, 41.0, 41.0)
-    assert last.solve_bounds == last.raster_bounds
+    assert last.ownership_bounds[2:] == (36.24, 36.24)
+    for job in jobs:
+        x0, y0, x1, y1 = job.raster_bounds
+        assert x1 - x0 == pytest.approx(10.0) and y1 - y0 == pytest.approx(10.0)
     assert last.pixel_resolution_um == (10.0 / 224.0)
+
+
+def test_adjacent_tiles_own_disjoint_pixels() -> None:
+    """Owned pixel ranges of neighbouring tiles must tile the die without overlap (a fractional
+    patch stride used to give the straddling pixel column to both tiles)."""
+    from window_runtime import _bounds_to_pixel_slice
+
+    jobs = build_tiled_window_jobs(
+        "gcd",
+        die_bounds_um=(0.0, 0.0, 36.24, 36.24),
+        target_size=224,
+        tile_size_um=10.0,
+        tile_context_um=1.0,
+    )
+    res = jobs[0].pixel_resolution_um
+    stride_px = (jobs[1].ownership_bounds[0] - jobs[0].ownership_bounds[0]) / res
+    assert stride_px == pytest.approx(round(stride_px), abs=1e-9)
+    owned_columns = []
+    for job in jobs:
+        if job.row_index != 0:
+            continue
+        px0, px1, _, _ = _bounds_to_pixel_slice(
+            window_bounds=(job.raster_bounds[0], job.raster_bounds[1], 0.0, job.raster_bounds[2], job.raster_bounds[3], 0.0),
+            pixel_resolution=res,
+            target_size=224,
+            keep_bounds=job.ownership_bounds,
+        )
+        start = round((job.raster_bounds[0] - jobs[0].raster_bounds[0]) / res)
+        owned_columns.extend(range(start + px0, start + px1))
+    assert len(owned_columns) == len(set(owned_columns))
+    assert sorted(owned_columns) == list(range(min(owned_columns), max(owned_columns) + 1))
 
 
 def test_patch_fragment_remap_splits_rectangles_crossing_patch_boundary() -> None:
