@@ -9,7 +9,17 @@ DEFAULT_TILE_SIZE_UM = 10.0
 DEFAULT_TILE_CONTEXT_UM = 1.0
 DEFAULT_TILE_STRIDE_UM = DEFAULT_TILE_SIZE_UM - (2.0 * DEFAULT_TILE_CONTEXT_UM)
 DEFAULT_PATCH_SIZE_UM = DEFAULT_TILE_STRIDE_UM
+# Model window of each technology's CapBench large windows (224 px). Tiles must use the window the
+# model was trained on: a Sky130HD model sees 20 um per window, so a 10 um tile doubles every feature.
+TILE_SIZE_UM_BY_TECH = {"nangate45": 10.0, "sky130hd": 20.0}
+TILE_CONTEXT_FRACTION = DEFAULT_TILE_CONTEXT_UM / DEFAULT_TILE_SIZE_UM
 _EPSILON = 1e-9
+
+
+def tile_geometry_for_tech(tech_name: str) -> Tuple[float, float]:
+    """(tile_size_um, tile_context_um) for a technology YAML stem; unknown stems keep the defaults."""
+    tile_size_um = TILE_SIZE_UM_BY_TECH.get(str(tech_name), DEFAULT_TILE_SIZE_UM)
+    return tile_size_um, tile_size_um * TILE_CONTEXT_FRACTION
 
 
 @dataclass(frozen=True)

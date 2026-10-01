@@ -17,7 +17,7 @@ from spef_runtime import (  # noqa: E402
     symmetrize_directed_indexed_couplings,
     totals_from_unordered_couplings,
 )
-from tile_utils import build_tiled_window_jobs  # noqa: E402
+from tile_utils import build_tiled_window_jobs, tile_geometry_for_tech  # noqa: E402
 
 
 def test_patch_tiling_uses_owned_patch_margin_and_10um_model_window() -> None:
@@ -58,6 +58,25 @@ def test_edge_patch_keeps_full_10um_model_window() -> None:
     assert last.raster_bounds == (31.0, 31.0, 41.0, 41.0)
     assert last.solve_bounds == last.raster_bounds
     assert last.pixel_resolution_um == (10.0 / 224.0)
+
+
+def test_tiles_use_each_technology_training_window() -> None:
+    assert tile_geometry_for_tech("nangate45") == (10.0, 1.0)
+    assert tile_geometry_for_tech("sky130hd") == (20.0, 2.0)
+
+    tile_size_um, tile_context_um = tile_geometry_for_tech("sky130hd")
+    jobs = build_tiled_window_jobs(
+        "sky",
+        die_bounds_um=(0.0, 0.0, 32.0, 16.0),
+        target_size=224,
+        tile_size_um=tile_size_um,
+        tile_context_um=tile_context_um,
+    )
+
+    assert len(jobs) == 2
+    assert jobs[0].ownership_bounds == (0.0, 0.0, 16.0, 16.0)
+    assert jobs[0].raster_bounds == (-2.0, -2.0, 18.0, 18.0)
+    assert jobs[0].pixel_resolution_um == (20.0 / 224.0)
 
 
 def test_patch_fragment_remap_splits_rectangles_crossing_patch_boundary() -> None:
