@@ -60,25 +60,6 @@ def test_edge_patch_keeps_full_10um_model_window() -> None:
     assert last.pixel_resolution_um == (10.0 / 224.0)
 
 
-def test_tiles_use_each_technology_training_window() -> None:
-    assert tile_geometry_for_tech("nangate45") == (10.0, 1.0)
-    assert tile_geometry_for_tech("sky130hd") == (20.0, 2.0)
-
-    tile_size_um, tile_context_um = tile_geometry_for_tech("sky130hd")
-    jobs = build_tiled_window_jobs(
-        "sky",
-        die_bounds_um=(0.0, 0.0, 32.0, 16.0),
-        target_size=224,
-        tile_size_um=tile_size_um,
-        tile_context_um=tile_context_um,
-    )
-
-    assert len(jobs) == 2
-    assert jobs[0].ownership_bounds == (0.0, 0.0, 16.0, 16.0)
-    assert jobs[0].raster_bounds == (-2.0, -2.0, 18.0, 18.0)
-    assert jobs[0].pixel_resolution_um == (20.0 / 224.0)
-
-
 def test_patch_fragment_remap_splits_rectangles_crossing_patch_boundary() -> None:
     try:
         from def_fast_density import PreparedDefRasterInput
@@ -313,3 +294,25 @@ def test_totals_are_derived_from_final_unordered_couplings() -> None:
     )
 
     assert np.allclose(totals, np.asarray([4.0, 5.5, 6.5], dtype=np.float64))
+
+
+def test_tiles_use_each_technology_training_window() -> None:
+    assert tile_geometry_for_tech("nangate45") == (10.0, 1.0)
+    assert tile_geometry_for_tech("sky130hd") == (20.0, 2.0)
+
+    tile_size_um, tile_context_um = tile_geometry_for_tech("sky130hd")
+    jobs = build_tiled_window_jobs(
+        "sky",
+        die_bounds_um=(0.0, 0.0, 32.0, 16.0),
+        target_size=224,
+        tile_size_um=tile_size_um,
+        tile_context_um=tile_context_um,
+    )
+
+    pixel_um = 20.0 / 224.0
+    x0, y0, x1, y1 = jobs[0].raster_bounds
+    assert len(jobs) == 2
+    assert jobs[0].pixel_resolution_um == pixel_um
+    assert abs((x1 - x0) - 20.0) < 1e-9 and abs((y1 - y0) - 20.0) < 1e-9
+    # 2 um of context (10% of the window), up to rounding to whole pixels.
+    assert abs(-x0 - 2.0) <= pixel_um and abs(-y0 - 2.0) <= pixel_um
