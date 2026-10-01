@@ -21,7 +21,7 @@ python full-pipeline/compile_models.py \
   --env-checkpoint models/flash-cnncap-d4-d-k5-nangate45-large-coupling.pth
 ```
 
-This writes FP16 TensorRT engines plus `compiled_models.json`, which records the active layer ordering and model contract.
+This writes the TensorRT engines plus `compiled_models.json`, which records the active layer ordering, precisions, and model contract. The total engine is FP16; the coupling (env) engine defaults to BF16 with batch 64, because the released coupling model's deepest U-Net levels exceed the FP16 range and an FP16 build returns NaN couplings. Use `--total-precision` / `--env-precision` (`fp16`, `bf16`, `fp32`) to override.
 
 ## Full-layout inference
 
@@ -55,4 +55,6 @@ Run `python full-pipeline/run_multi.py --help` for batching and output controls.
 
 ## Technology support
 
-The release includes the Nangate45 and Sky130HD stack YAML files used by the paper. Standard-cell geometry needed by the native parser is compiled into `native/lefdef_compiled_cell_recipes*.h`; provenance is documented in the repository's third-party notices.
+The release includes the Nangate45 and Sky130HD stack YAML files used by the paper. Standard-cell geometry, LEF vias, and default wire widths needed by the native parser are compiled into `native/lefdef_compiled_cell_recipes*.h` by `scripts/generate_native_tech_tables.py`; provenance is documented in the repository's third-party notices.
+
+The DEF rasterizer reproduces the geometry of the GDS written by OpenROAD-flow-scripts (KLayout `def2stream`), which is what the CapBench training windows and RWCap references are built from: exact LEF and DEF via definitions, DEF wire extensions (special wires have flush ends), non-default-rule widths, routing patches, IO pin shapes, and the metal of the standard-cell GDS rather than the LEF abstract. Cell-internal metal is visible to the model but never queried as a conductor.

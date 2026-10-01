@@ -18,7 +18,9 @@ REPO_ROOT = THIS_DIR.parent
 DEFAULT_TARGET_SIZE = 224
 DEFAULT_DEVICE_NAME = "cuda"
 DEFAULT_PREFERRED_BATCH_SIZE = 24
-DEFAULT_TILE_STREAM_SIZE = 0
+DEFAULT_ENV_BATCH_SIZE = 64
+# Tiles staged per native DEF pass; bounded so full-chip runs fit in GPU memory.
+DEFAULT_TILE_STREAM_SIZE = 64
 MODEL_OUTPUT_TO_FARADS = 1e-15
 
 for extra_path in (str(REPO_ROOT), str(THIS_DIR)):
@@ -1021,7 +1023,7 @@ def _add_pipeline_config_args(parser: argparse.ArgumentParser) -> None:
         "--master-batch-size",
         type=int,
         default=None,
-        help="Batch size for env-model master queries. Defaults to min(24, env engine max_batch_size).",
+        help="Batch size for env-model master queries. Defaults to min(64, env engine max_batch_size).",
     )
     parser.add_argument(
         "--total-batch-size",
@@ -1063,7 +1065,7 @@ def _build_pipeline_config(args: argparse.Namespace) -> PipelineConfig:
         else args.total_batch_size
     )
     master_batch_size = int(
-        min(DEFAULT_PREFERRED_BATCH_SIZE, int(metadata.env_max_batch_size))
+        min(DEFAULT_ENV_BATCH_SIZE, int(metadata.env_max_batch_size))
         if args.master_batch_size is None
         else args.master_batch_size
     )

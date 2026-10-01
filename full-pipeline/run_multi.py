@@ -31,6 +31,7 @@ from window_runtime import (  # pylint: disable=wrong-import-position
 
 
 DEFAULT_PREFERRED_BATCH_SIZE = 24
+DEFAULT_ENV_BATCH_SIZE = 64
 DEFAULT_WINDOW_STREAM_SIZE = 24
 
 
@@ -560,7 +561,7 @@ def _build_parser() -> argparse.ArgumentParser:
         default=None,
         help=(
             "Batch size for env-model master queries. "
-            "Defaults to min(24, env engine max_batch_size) from the manifest."
+            "Defaults to min(64, env engine max_batch_size) from the manifest."
         ),
     )
     parser.add_argument("--c-unit", type=str, default="PF", help="Capacitance unit used in the written SPEFs.")
@@ -591,7 +592,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         else args.total_batch_size
     )
     master_batch_size = int(
-        min(DEFAULT_PREFERRED_BATCH_SIZE, int(session.metadata.env_max_batch_size))
+        min(DEFAULT_ENV_BATCH_SIZE, int(session.metadata.env_max_batch_size))
         if args.master_batch_size is None
         else args.master_batch_size
     )

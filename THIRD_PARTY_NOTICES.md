@@ -4,7 +4,7 @@ The repository contains generated or adapted data derived from the following ope
 
 ## Nangate45
 
-`full-pipeline/native/lefdef_compiled_cell_recipes.h` is generated from Nangate45 LEF geometry. The corresponding OpenROAD-flow-scripts Nangate45 platform is distributed under the Apache License 2.0:
+`full-pipeline/native/lefdef_compiled_cell_recipes.h` is generated from the Nangate45 LEF files and standard-cell GDS (`scripts/generate_native_tech_tables.py`). The corresponding OpenROAD-flow-scripts Nangate45 platform is distributed under the Apache License 2.0:
 
 - [OpenROAD-flow-scripts Nangate45 platform](https://github.com/The-OpenROAD-Project/OpenROAD-flow-scripts/tree/master/flow/platforms/nangate45)
 - [Nangate45 platform license](https://github.com/The-OpenROAD-Project/OpenROAD-flow-scripts/blob/master/flow/platforms/nangate45/LICENSE)
@@ -13,7 +13,7 @@ The generated file has been transformed into C++ lookup tables for Flash-CNNCap'
 
 ## SkyWater SKY130
 
-`full-pipeline/native/lefdef_compiled_cell_recipes_sky130hd.h` is generated from SKY130 HD LEF geometry. The SkyWater open-source PDK is distributed under the Apache License 2.0:
+`full-pipeline/native/lefdef_compiled_cell_recipes_sky130hd.h` is generated from the SKY130 HD LEF files and standard-cell GDS (`scripts/generate_native_tech_tables.py`). The SkyWater open-source PDK is distributed under the Apache License 2.0:
 
 - [SkyWater open-source PDK](https://github.com/google/skywater-pdk)
 - [SkyWater PDK license](https://github.com/google/skywater-pdk/blob/main/LICENSE)

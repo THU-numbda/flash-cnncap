@@ -28,7 +28,7 @@ from idmap_cuda_runtime import (
 from tech_parser import get_conductor_layers_and_min_widths
 
 
-DEFAULT_FAST_LEFDEF_EXTENSION_NAME = "cnncap_flash_lefdef_fast_parser_v2"
+DEFAULT_FAST_LEFDEF_EXTENSION_NAME = "cnncap_flash_lefdef_fast_parser_v3"
 _NATIVE_SOURCE_DIR = Path(__file__).resolve().parent / "native"
 _FAST_LEFDEF_MODULE = None
 _FAST_LEFDEF_LOAD_ATTEMPTED = False
@@ -147,7 +147,7 @@ def load_fast_lefdef_parser_extension():
         raise RuntimeError("torch.utils.cpp_extension is required to build the fast LEF+DEF parser extension.") from exc
 
     source_paths = [
-        _NATIVE_SOURCE_DIR / "lefdef_fast_parser.c",
+        _NATIVE_SOURCE_DIR / "def_geometry.cpp",
         _NATIVE_SOURCE_DIR / "lefdef_fast_parser_bindings.cpp",
         _NATIVE_SOURCE_DIR / "lefdef_fast_parser_compiled.cpp",
     ]
@@ -166,7 +166,7 @@ def load_fast_lefdef_parser_extension():
         _FAST_LEFDEF_MODULE = load(
             name=DEFAULT_FAST_LEFDEF_EXTENSION_NAME,
             sources=[str(path) for path in source_paths],
-            extra_cflags=["-O3"],
+            extra_cflags=["-O3", "-std=c++17"],
             extra_include_paths=[str(_NATIVE_SOURCE_DIR)],
             build_directory=str(build_dir),
             verbose=False,

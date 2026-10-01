@@ -75,9 +75,17 @@ __global__ void build_owned_sparse_metadata_kernel(
     }
 
     int64_t cid = static_cast<int64_t>(full_local_map[flat_idx]);
-    if (cid <= 0 || cid > real_conductor_count) {
+    if (cid <= 0) {
         full_local_map[flat_idx] = static_cast<int16_t>(0);
         occupied[flat_idx] = static_cast<uint8_t>(0);
+        owned_local_map[flat_idx] = static_cast<int16_t>(0);
+        return;
+    }
+    if (cid > real_conductor_count) {
+        // Cell-internal metal and unbound pins: part of the layout the model sees (the
+        // training windows contain it), but never a queried conductor.
+        full_local_map[flat_idx] = static_cast<int16_t>(0);
+        occupied[flat_idx] = static_cast<uint8_t>(1);
         owned_local_map[flat_idx] = static_cast<int16_t>(0);
         return;
     }

@@ -439,6 +439,27 @@ def build_model(spec: ModelSpec, *, num_input_channels: int, device: torch.devic
     return LoadedModel(module=eager, outputs_qmap=False, backend="eager", max_batch_size=None)
 
 
+TRT_PRECISIONS = ("fp16", "bf16", "fp32")
+
+
+def _set_engine_precision(config, builder, trt, precision: str) -> None:
+    """fp16: fastest, but activations above 65504 overflow (the released coupling model reaches
+    ~5e6 in its deepest U-Net levels and returns NaN); bf16: FP32 range with bf16 storage (Ampere or
+    newer); fp32: TF32 tensor-core math."""
+    if precision not in TRT_PRECISIONS:
+        raise ValueError(f"Unsupported TensorRT precision '{precision}', expected one of {TRT_PRECISIONS}")
+    if precision == "fp16":
+        if not bool(builder.platform_has_fast_fp16):
+            raise RuntimeError(
+                "TensorRT FP16 compilation was requested but the current platform does not advertise fast FP16 support."
+            )
+        config.set_flag(trt.BuilderFlag.FP16)
+    elif precision == "bf16":
+        if not hasattr(trt.BuilderFlag, "BF16"):
+            raise RuntimeError("This TensorRT version does not support BF16 engines.")
+        config.set_flag(trt.BuilderFlag.BF16)
+
+
 def compile_eager_qmap_model_to_tensorrt_engine(
     eager: torch.nn.Module,
     *,
@@ -449,6 +470,7 @@ def compile_eager_qmap_model_to_tensorrt_engine(
     opt_batch_size: int,
     max_batch_size: int,
     model_label: str = "eager_model",
+    precision: str = "fp16",
 ) -> Path:
     if device.type != "cuda":
         raise RuntimeError("TensorRT engine compilation requires CUDA.")
@@ -519,11 +541,7 @@ def compile_eager_qmap_model_to_tensorrt_engine(
             )
 
         config = builder.create_builder_config()
-        if not bool(builder.platform_has_fast_fp16):
-            raise RuntimeError(
-                "TensorRT FP16 compilation was requested but the current platform does not advertise fast FP16 support."
-            )
-        config.set_flag(trt.BuilderFlag.FP16)
+        _set_engine_precision(config, builder, trt, precision)
         if hasattr(config, "builder_optimization_level"):
             config.builder_optimization_level = int(DEFAULT_TRT_BUILDER_OPT_LEVEL)
         if hasattr(config, "max_num_tactics"):
@@ -574,6 +592,7 @@ def compile_model_to_tensorrt_engine(
     target_size: int,
     opt_batch_size: int,
     max_batch_size: int,
+    precision: str = "fp16",
 ) -> Path:
     if spec.checkpoint_path is None:
         raise ValueError("compile_model_to_tensorrt_engine requires spec.checkpoint_path.")
@@ -592,6 +611,7 @@ def compile_model_to_tensorrt_engine(
         opt_batch_size=opt_batch_size,
         max_batch_size=max_batch_size,
         model_label=str(spec.checkpoint_path),
+        precision=precision,
     )
 
 
